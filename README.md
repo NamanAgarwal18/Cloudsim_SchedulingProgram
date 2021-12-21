@@ -1,8 +1,7 @@
 # Cloudsim Scheduling Algorithm Implimentation
 
 ## Algorithm Name
-**Task scheduling using Weighted Active Monitoring Load Distribution
-technique. **
+**Task scheduling using Weighted Active Monitoring Load Distribution technique.**
 
 ## Explanation
 This algorithm creates VM‟s of different processing power and allocates
