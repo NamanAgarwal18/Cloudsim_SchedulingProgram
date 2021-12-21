@@ -1,6 +1,7 @@
 
 
 package org.cloudbus.cloudsim.examples;
+import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -8,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import com.opencsv.CSVWriter;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
@@ -52,7 +54,44 @@ public class Simulation {
 
             list.add(vm[i]);
         }
+        try {
+            String data[] = new String[list.size()*3 + 4];
+            data[0] = "Cloudlet";
+            data[1] = "";
+            data[2] = "Vertual Machine";
+            data[3] = "";
+            for(int i=0; i<list.size(); i++)
+            {
+                data[i*3 + 4] = "Length";
+                data[i*3+5] = "Load";
+                data[i*3+6] = "";
+            }
+            String csv = "data.csv";
+            CSVWriter writer = new CSVWriter(new FileWriter(csv,false));
+            //CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
+            writer.writeNext(data);
 
+            data = new String[list.size()*3 + 4];
+            data[0] = "";
+            data[1] = "";
+            data[2] = "";
+            data[3] = "";
+            for(int i=0; i<list.size(); i++)
+            {
+                data[i*3 + 4] = ""+vm[i].getMips();
+                data[i*3+5] = "";
+                data[i*3+6] = "";
+            }
+            writer.writeNext(data);
+
+
+
+
+            writer.close();
+        }
+        catch (Exception e){
+
+        }
 
         return list;
     }
@@ -113,8 +152,8 @@ public class Simulation {
             int brokerId = broker.getId();
 
             //Fourth step: Create VMs and Cloudlets and send them to broker
-            vmlist = createVM(brokerId,5); //creating 20 vms
-            cloudletList = createCloudlet(brokerId,25); // creating 40 cloudlets
+            vmlist = createVM(brokerId,10); //creating 20 vms
+            cloudletList = createCloudlet(brokerId,40); // creating 40 cloudlets
 
             broker.submitVmList(vmlist);
             broker.submitCloudletList(cloudletList);

@@ -402,17 +402,17 @@ public class DatacenterBroker extends SimEntity {
 
 	private void upload(double mips[], double tasks[], double loads[], int vm, int cloudlet)
 	{
-		String data[] = new String[getVmsCreatedList().size()*4 + 4];
-		data[0] = "Cloudlet = " + cloudlet;
+		String data[] = new String[getVmsCreatedList().size()*3 + 4];
+		data[0] = "CL = " + cloudlet;
 		data[1] = " -> ";
 		data[2] = "VM = " + vm;
 		data[3] = "";
 		for(int i=0; i<getVmsCreatedList().size(); i++)
 		{
-			data[(i+1)*4] = "" + mips[i];
-			data[(i+1)*4 + 1] = ""+tasks[i];
-			data[(i+1)*4 + 2] = ""+loads[i];
-			data[(i+1)*4 + 3] = "";
+
+			data[(i*3)+4] = ""+tasks[i];
+			data[(i*3)+5] = ""+loads[i];
+			data[(i*3)+6] = "";
 		}
 		try {
 			String csv = "data.csv";
