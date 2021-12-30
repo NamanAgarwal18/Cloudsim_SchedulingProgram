@@ -36,7 +36,7 @@ import org.cloudbus.cloudsim.lists.VmList;
  */
 public class NetDatacenterBroker extends SimEntity {
 
-	// TODO: remove unnecessary variables
+
 
 	/** The vm list. */
 	private List<? extends Vm> vmList;

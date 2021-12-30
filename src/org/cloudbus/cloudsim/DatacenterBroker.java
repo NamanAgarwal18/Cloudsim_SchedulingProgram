@@ -20,8 +20,7 @@ import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.CloudletList;
 import org.cloudbus.cloudsim.lists.VmList;
-import java.io.FileWriter;
-import com.opencsv.CSVWriter;
+
 /**
  * DatacentreBroker represents a broker acting on behalf of a user. It hides VM management, as vm
  * creation, sumbission of cloudlets to this VMs and destruction of VMs.
@@ -291,7 +290,7 @@ public class DatacenterBroker extends SimEntity {
 
 	/**
 	 * Overrides this method when making a new and different type of Broker. This method is called
-	 * by {@link #()} for incoming unknown tags.
+	 * by {@link #body()} for incoming unknown tags.
 	 * 
 	 * @param ev a SimEvent object
 	 * @pre ev != null
@@ -339,146 +338,13 @@ public class DatacenterBroker extends SimEntity {
 	 * @pre $none
 	 * @post $none
 	 */
-//	protected void submitCloudlets() {
-//		int vmIndex = 0;
-//		List <Cloudlet> sortList= new ArrayList<Cloudlet>();				//New
-//		ArrayList<Cloudlet> tempList = new ArrayList<Cloudlet>();			//New
-//		for(Cloudlet cloudlet: getCloudletList())					//New
-//		{
-//			tempList.add(cloudlet);									//New
-//		}
-//		int totalCloudlets= tempList.size();						//New
-//		for(int i=0;i<totalCloudlets;i++)							//New
-//		{
-//
-//			Cloudlet smallestCloudlet= tempList.get(0);				//New
-//			for(Cloudlet checkCloudlet: tempList)					//New
-//			{
-//				if(smallestCloudlet.getCloudletLength()>checkCloudlet.getCloudletLength())	//New
-//				{
-//					smallestCloudlet= checkCloudlet;				//New
-//				}
-//			}
-//			sortList.add(smallestCloudlet);							//New
-//			tempList.remove(smallestCloudlet);						//New
-//
-//		}
-//		int count=1;												//New
-//		for(Cloudlet printCloudlet: sortList)						//New
-//		{
-//			Log.printLine(count+".Cloudler Id:"+printCloudlet.getCloudletId()+",Cloudlet Length:"+printCloudlet.getCloudletLength());
-//			count++;
-//		}
-//
-//
-//		for (Cloudlet cloudlet : sortList) {
-//			Vm vm;
-//			// if user didn't bind this cloudlet and it has not been executed yet
-//			if (cloudlet.getVmId() == -1) {
-//				vm = getVmsCreatedList().get(vmIndex);
-//			} else { // submit to the specific vm
-//				vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
-//				if (vm == null) { // vm was not created
-//					Log.printLine(CloudSim.clock() + ": " + getName() + ": Postponing execution of cloudlet "
-//							+ cloudlet.getCloudletId() + ": bount VM not available");
-//					continue;
-//				}
-//			}
-//
-//			Log.printLine(CloudSim.clock() + ": " + getName() + ": Sending cloudlet "
-//					+ cloudlet.getCloudletId() + " to VM #" + vm.getId());
-//			cloudlet.setVmId(vm.getId());
-//			sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
-//			cloudletsSubmitted++;
-//			vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
-//			getCloudletSubmittedList().add(cloudlet);
-//		}
-//
-//		// remove submitted cloudlets from waiting list
-//		for (Cloudlet cloudlet : getCloudletSubmittedList()) {
-//			getCloudletList().remove(cloudlet);
-//		}
-//	}
-
-	private void upload(double mips[], double tasks[], double loads[], int vm, int cloudlet)
-	{
-		String data[] = new String[getVmsCreatedList().size()*3 + 4];
-		data[0] = "CL = " + cloudlet;
-		data[1] = " -> ";
-		data[2] = "VM = " + vm;
-		data[3] = "";
-		for(int i=0; i<getVmsCreatedList().size(); i++)
-		{
-
-			data[(i*3)+4] = ""+tasks[i];
-			data[(i*3)+5] = ""+loads[i];
-			data[(i*3)+6] = "";
-		}
-		try {
-			String csv = "data.csv";
-			CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
-			writer.writeNext(data);
-			writer.close();
-		}
-		catch (Exception e)
-		{
-			Log.printLine("Error occurred -> " + e);
-		}
-	}
-
 	protected void submitCloudlets() {
 		int vmIndex = 0;
-		double mips[] = new double[getVmsCreatedList().size()];
-		double tasks[] = new double[getVmsCreatedList().size()];
-		double loads[] = new double[getVmsCreatedList().size()];
-
-		for(int i=0; i<getVmsCreatedList().size(); i++)
-		{
-			Vm vm = getVmsCreatedList().get(i);
-			mips[i] = vm.getMips();
-			loads[i] = 0;
-			tasks[i] = 0;
-		}
-
 		for (Cloudlet cloudlet : getCloudletList()) {
 			Vm vm;
 			// if user didn't bind this cloudlet and it has not been executed yet
 			if (cloudlet.getVmId() == -1) {
-				int machineId = 0;
-				for(int i=1; i<getVmsCreatedList().size(); i++)
-				{
-					if(loads[machineId] > loads[i])
-					{
-						machineId = i;
-					}
-				}
-				tasks[machineId] += cloudlet.getCloudletLength();
-				loads[machineId] = tasks[machineId] / mips[machineId];
-				vm = getVmsCreatedList().get(machineId);
-				Log.printLine("------------------------------------------------------------------------");
-				Log.printLine("Cloudlet -> "+cloudlet.getCloudletId() + " on machine -> "+machineId);
-				String s = "Mips -> ";
-				for(int i=0; i<getVmsCreatedList().size(); i++)
-				{
-					s+=(int)(mips[i]) + "\t";
-				}
-				Log.printLine(s);
-				s = "Tasks-> ";
-				for(int i=0; i<getVmsCreatedList().size(); i++)
-				{
-					s+=(int)(tasks[i]) + "\t";
-				}
-				Log.printLine(s);
-				s = "Loads-> ";
-				for(int i=0; i<getVmsCreatedList().size(); i++)
-				{;
-					int a = (int)(loads[i]*100);
-					s+=a + "\t";
-				}
-				Log.printLine(s);
-				upload(mips,tasks,loads,machineId,cloudlet.getCloudletId());
-
-
+				vm = getVmsCreatedList().get(vmIndex);
 			} else { // submit to the specific vm
 				vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
 				if (vm == null) { // vm was not created

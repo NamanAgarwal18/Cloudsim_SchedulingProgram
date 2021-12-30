@@ -1,13 +1,11 @@
 
 
 package org.cloudbus.cloudsim.examples;
+import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
 
 import com.opencsv.CSVWriter;
 import org.cloudbus.cloudsim.*;
@@ -15,6 +13,8 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
+
+
 
 /**
  * An example showing how to create
@@ -25,84 +25,56 @@ public class Simulation {
     /** The cloudlet list. */
     private static List<Cloudlet> cloudletList;
 
+
     /** The vmlist. */
     private static List<Vm> vmlist;
 
-    private static List<Vm> createVM(int userId, int vms) {
 
-        //Creates a container to store VMs. This list is passed to the broker later
+
+    private static List<Integer> create(int num,int start, int end)
+    {
+        LinkedList<Integer> list = new LinkedList<Integer>();
+        for(int i=0;i<num;i++) {
+            Random r = new Random();
+            Integer a = start + r.nextInt(end);
+            list.add(a);
+        }
+        return list;
+    }
+
+
+    private static List<Vm> createVM(int userId, int vms,List<Integer> vmMips) {
         LinkedList<Vm> list = new LinkedList<Vm>();
 
         //VM Parameters
         long size = 10000; //image size (MB)
         int ram = 512; //vm memory (MB)
-        int mips = 400;
+
         long bw = 1000;
         int pesNumber = 1; //number of cpus
         String vmm = "Xen"; //VMM name
 
-        //create VMs
         Vm[] vm = new Vm[vms];
 
 
         for(int i=0;i<vms;i++){
-            Random r= new Random();
-            vm[i] = new Vm(i, userId, mips + r.nextInt(600), pesNumber, ram, bw, size, vmm, new CloudletSchedulerSpaceShared());
+
+            vm[i] = new Vm(i, userId, vmMips.get(i), pesNumber, ram, bw, size, vmm, new CloudletSchedulerSpaceShared());
             //for creating a VM with a space shared scheduling policy for cloudlets:
-            //vm[i] = Vm(i, userId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerSpaceShared());
-            Log.printLine(vm[i].getId()+" -> Mips = "+vm[i].getMips());
+            //Log.printLine(vm[i].getId()+" -> Mips = "+vm[i].getMips());
 
             list.add(vm[i]);
         }
-        try {
-            String data[] = new String[list.size()*3 + 4];
-            data[0] = "Cloudlet";
-            data[1] = "";
-            data[2] = "Vertual Machine";
-            data[3] = "";
-            for(int i=0; i<list.size(); i++)
-            {
-                data[i*3 + 4] = "Length";
-                data[i*3+5] = "Load";
-                data[i*3+6] = "";
-            }
-            String csv = "data.csv";
-            CSVWriter writer = new CSVWriter(new FileWriter(csv,false));
-            //CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
-            writer.writeNext(data);
-
-            data = new String[list.size()*3 + 4];
-            data[0] = "";
-            data[1] = "";
-            data[2] = "";
-            data[3] = "";
-            for(int i=0; i<list.size(); i++)
-            {
-                data[i*3 + 4] = ""+vm[i].getMips();
-                data[i*3+5] = "";
-                data[i*3+6] = "";
-            }
-            writer.writeNext(data);
-
-
-
-
-            writer.close();
-        }
-        catch (Exception e){
-
-        }
-
         return list;
     }
 
 
-    private static List<Cloudlet> createCloudlet(int userId, int cloudlets){
+    private static List<Cloudlet> createCloudlet(int userId, int cloudlets,List<Integer> cloutletLength){
         // Creates a container to store Cloudlets
         LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
 
         //cloudlet parameters
-        long length = 1000;
+
         long fileSize = 300;
         long outputSize = 300;
         int pesNumber = 1;
@@ -111,11 +83,8 @@ public class Simulation {
         Cloudlet[] cloudlet = new Cloudlet[cloudlets];
 
         for(int i=0;i<cloudlets;i++){
-            Random r= new Random();
-
-            cloudlet[i] = new Cloudlet(i, length +r.nextInt(2000), pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
+            cloudlet[i] = new Cloudlet(i, cloutletLength.get(i), pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
             // setting the owner of these Cloudlets
-
             cloudlet[i].setUserId(userId);
             list.add(cloudlet[i]);
         }
@@ -133,27 +102,161 @@ public class Simulation {
         Log.printLine("Starting CloudSimExample6...");
 
         try {
-            // First step: Initialize the CloudSim package. It should be called
-            // before creating any entities.
+
+            int noOfVm = 11;
+            int noOfCloutlet = 200;
+            List vmsMips = create(noOfVm,400,600);
+            List cloutletLength = create(noOfCloutlet,1000,2000);
+
+            List<Cloudlet> algoList = Algo(noOfVm,noOfCloutlet,vmsMips,cloutletLength);
+            List<Cloudlet> roundRobinList = roundRobin(noOfVm,noOfCloutlet,vmsMips,cloutletLength);
+            printCloudletList(algoList);
+            printCloudletList(roundRobinList);
+
+            Collections.sort(algoList, new Comparator<Cloudlet>() {
+                @Override
+                public int compare(Cloudlet o1, Cloudlet o2) {
+                    return o1.getCloudletId() - o2.getCloudletId();
+                }
+            });
+            Collections.sort(roundRobinList, new Comparator<Cloudlet>() {
+                @Override
+                public int compare(Cloudlet o1, Cloudlet o2) {
+                    return o1.getCloudletId() - o2.getCloudletId();
+                }
+            });
+            String[] data = new String[5];
+            data[0] = "Cloutlet-ID";
+            data[1] = "Algo Response Time";
+            data[2] = "Round-Robin Response Time";
+            data[3] = "Algo Waiting Time";
+            data[4] = "Round-Robin Waiting Time";
+            String csv = "Statistics.csv";
+            CSVWriter writer = new CSVWriter(new FileWriter(csv, false));
+            writer.writeNext(data);
+            DecimalFormat dft = new DecimalFormat("###.##");
+            double responseTimeAlgo = 0.0;
+            double responseTimeRound = 0.0;
+            double waitingTimeAlgo = 0.0;
+            double waitingTimeRound = 0.0;
+            for(int i=0; i < noOfCloutlet; i++)
+            {
+                data[0] = ""+i;
+                data[1] = "" + dft.format(algoList.get(i).getExecStartTime());
+                data[2] = "" + dft.format(roundRobinList.get(i).getExecStartTime());
+                data[3] = ""+ dft.format(algoList.get(i).getActualCPUTime());
+                data[4] = ""+ dft.format(roundRobinList.get(i).getActualCPUTime());
+                responseTimeAlgo +=Double.parseDouble(dft.format(algoList.get(i).getExecStartTime()));
+                responseTimeRound+=Double.parseDouble(dft.format(roundRobinList.get(i).getExecStartTime()));
+                waitingTimeAlgo+=Double.parseDouble(dft.format(algoList.get(i).getActualCPUTime()));
+                waitingTimeRound+=Double.parseDouble(dft.format(roundRobinList.get(i).getActualCPUTime()));
+                writer.writeNext(data);
+            }
+            responseTimeAlgo/=noOfCloutlet;
+            responseTimeRound/=noOfCloutlet;
+            waitingTimeAlgo/=noOfCloutlet;
+            waitingTimeRound/=noOfCloutlet;
+
+            Log.printLine("Average Response Time");
+            Log.printLine("Algo:- "+responseTimeAlgo+"\t\t\t\tRound-Robin:- "+responseTimeRound);
+            Log.printLine("Average Waiting Time");
+            Log.printLine("Algo:- "+waitingTimeAlgo+"\t\t\t\tRound-Robin:- "+waitingTimeRound);
+            writer.close();
+
+
+            //graph();
+
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            Log.printLine("The simulation has been terminated due to an unexpected error");
+        }
+    }
+
+//    private static void graph()
+//    {
+//        XYSeriesCollection r1 = new XYSeriesCollection();
+//        XYSeries s1 = new XYSeries("Series 1",false,true);
+//        s1.add(1.1,2.0);
+//        s1.add(2.1,5.0);
+//        XYSeries s2 = new XYSeries("Series 2",false,true);
+//        s1.add(1.0, 4.0);
+//        s1.add(2.0, 3.0);
+//        r1.addSeries(s1);
+//        r1.addSeries(s2);
+//        JFreeChart chart = ChartFactory.createXYLineChart("XY Chart",
+//                "x-axis",
+//                "y-axis",
+//                r1,
+//                PlotOrientation.VERTICAL,
+//                true,
+//                true,false);
+//        try{
+//            ChartUtilities.saveChartAsJPEG(new File("chart.JPEG"),chart,500,300);
+//        }
+//        catch (Exception e)
+//        {
+//
+//        }
+//
+//    }
+
+    private static void upload(double mips[], double tasks[], double loads[], int vm, int cloudlet, int noOfVm)
+    {
+        String data[] = new String[noOfVm*3 + 4];
+        data[0] = "CL = " + cloudlet;
+        data[1] = " -> ";
+        data[2] = "VM = " + vm;
+        data[3] = "";
+        for(int i=0; i<noOfVm; i++)
+        {
+
+            data[(i*3)+4] = ""+tasks[i];
+            data[(i*3)+5] = ""+loads[i];
+            data[(i*3)+6] = "";
+        }
+        try {
+            String csv = "Algo.csv";
+            CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
+            writer.writeNext(data);
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            Log.printLine("Error occurred -> " + e);
+        }
+    }
+    public static List<Cloudlet> roundRobin(int noOfVM, int noOfCloutlet, List<Integer> vmsMips, List<Integer> cloutletLength)
+    {
+        try{
+
+
+            //Third step: Create Broker
             int num_user = 3;   // number of grid users
             Calendar calendar = Calendar.getInstance();
             boolean trace_flag = false;  // mean trace events
 
             // Initialize the CloudSim library
             CloudSim.init(num_user, calendar, trace_flag);
-
-            // Second step: Create Datacenters
-            //Datacenters are the resource providers in CloudSim. We need at list one of them to run a CloudSim simulation
             Datacenter datacenter0 = createDatacenter("Datacenter_0");
             Datacenter datacenter1 = createDatacenter("Datacenter_1");
 
-            //Third step: Create Broker
             DatacenterBroker broker = createBroker();
             int brokerId = broker.getId();
 
             //Fourth step: Create VMs and Cloudlets and send them to broker
-            vmlist = createVM(brokerId,10); //creating 20 vms
-            cloudletList = createCloudlet(brokerId,40); // creating 40 cloudlets
+            vmlist = createVM(brokerId,noOfVM,vmsMips); //creating 20 vms
+            cloudletList = createCloudlet(brokerId,noOfCloutlet,cloutletLength); // creating 40 cloudlets
+
+            int j = 0;
+            for(int i=0; i<noOfCloutlet; i++)
+            {
+                cloudletList.get(i).setVmId(j);
+                j = (j+1)%noOfVM;
+            }
+
 
             broker.submitVmList(vmlist);
             broker.submitCloudletList(cloudletList);
@@ -166,18 +269,129 @@ public class Simulation {
 
             CloudSim.stopSimulation();
 
-            printCloudletList(newList);
+            //printCloudletList(newList);
+            Log.printLine("CloudSimExample6 finished!");
+            return newList;
 
             //Print the debt of each user to each datacenter
 
-            Log.printLine("CloudSimExample6 finished!");
+
         }
         catch (Exception e)
         {
             e.printStackTrace();
             Log.printLine("The simulation has been terminated due to an unexpected error");
         }
+        return new LinkedList<Cloudlet>();
     }
+    public static List<Cloudlet> Algo(int noOfVM, int noOfCloutlet, List<Integer> vmsMips, List<Integer> cloutletLength)
+    {
+        try{
+
+
+            //Third step: Create Broker
+            int num_user = 3;   // number of grid users
+            Calendar calendar = Calendar.getInstance();
+            boolean trace_flag = false;  // mean trace events
+
+            // Initialize the CloudSim library
+            CloudSim.init(num_user, calendar, trace_flag);
+            Datacenter datacenter0 = createDatacenter("Datacenter_0");
+            Datacenter datacenter1 = createDatacenter("Datacenter_1");
+
+            DatacenterBroker broker = createBroker();
+            int brokerId = broker.getId();
+
+            //Fourth step: Create VMs and Cloudlets and send them to broker
+            vmlist = createVM(brokerId,noOfVM,vmsMips); //creating 20 vms
+            cloudletList = createCloudlet(brokerId,noOfCloutlet,cloutletLength); // creating 40 cloudlets
+
+            String data[] = new String[noOfVM*3 + 4];
+            data[0] = "Cloudlet";
+            data[1] = "";
+            data[2] = "Vertual Machine";
+            data[3] = "";
+            for(int i=0; i<noOfVM; i++)
+            {
+                data[i*3 + 4] = "Length";
+                data[i*3+5] = "Load";
+                data[i*3+6] = "";
+            }
+            String csv = "Algo.csv";
+            CSVWriter writer = new CSVWriter(new FileWriter(csv,false));
+            //CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
+            writer.writeNext(data);
+
+            data = new String[noOfVM*3 + 4];
+            data[0] = "";
+            data[1] = "";
+            data[2] = "";
+            data[3] = "";
+            for(int i=0; i<noOfVM; i++)
+            {
+                data[i*3 + 4] = ""+vmsMips.get(i);
+                data[i*3+5] = "";
+                data[i*3+6] = "";
+            }
+            writer.writeNext(data);
+            writer.close();
+
+
+            double mips[] = new double[noOfVM];
+            double tasks[] = new double[noOfVM];
+            double loads[] = new double[noOfVM];
+            for(int i=0; i<noOfVM; i++)
+            {
+                mips[i] = vmsMips.get(i);
+                loads[i] = 0;
+                tasks[i] = 0;
+            }
+            for(int i=0; i<noOfCloutlet;i++)
+            {
+                int machineId = 0;
+                for(int j=1; j<noOfVM; j++)
+                {
+                    if(loads[machineId] > loads[j])
+                    {
+                        machineId = j;
+                    }
+                }
+                tasks[machineId] += cloudletList.get(i).getCloudletLength();
+                loads[machineId] = tasks[machineId] / mips[machineId];
+                (cloudletList.get(i)).setVmId(machineId);
+                upload(mips,tasks,loads,machineId,i,noOfVM);
+            }
+
+
+
+
+            broker.submitVmList(vmlist);
+            broker.submitCloudletList(cloudletList);
+
+            // Fifth step: Starts the simulation
+            CloudSim.startSimulation();
+
+            // Final step: Print results when simulation is over
+            List<Cloudlet> newList = broker.getCloudletReceivedList();
+
+            CloudSim.stopSimulation();
+
+            //printCloudletList(newList);
+            Log.printLine("CloudSimExample6 finished!");
+            return newList;
+
+            //Print the debt of each user to each datacenter
+
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            Log.printLine("The simulation has been terminated due to an unexpected error");
+        }
+        return new LinkedList<Cloudlet>();
+    }
+
 
     private static Datacenter createDatacenter(String name){
 
@@ -339,3 +553,6 @@ public class Simulation {
 
     }
 }
+
+
+
