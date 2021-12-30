@@ -102,16 +102,21 @@ public class Simulation {
         Log.printLine("Starting CloudSimExample6...");
 
         try {
+            Scanner scanner = new Scanner(System.in);
+            int noOfVm,noOfCloutlet;
+            Log.printLine("Enter the number of VMs: ");
+            noOfVm = scanner.nextInt();
+            Log.printLine("Enter the number of Cloudlets: ");
+            noOfCloutlet=scanner.nextInt();
 
-            int noOfVm = 11;
-            int noOfCloutlet = 200;
+
             List vmsMips = create(noOfVm,400,600);
             List cloutletLength = create(noOfCloutlet,1000,2000);
 
             List<Cloudlet> algoList = Algo(noOfVm,noOfCloutlet,vmsMips,cloutletLength);
             List<Cloudlet> roundRobinList = roundRobin(noOfVm,noOfCloutlet,vmsMips,cloutletLength);
-            printCloudletList(algoList);
-            printCloudletList(roundRobinList);
+            printCloudletList(algoList,"Algo");
+            printCloudletList(roundRobinList,"Round Robin");
 
             Collections.sort(algoList, new Comparator<Cloudlet>() {
                 @Override
@@ -127,11 +132,11 @@ public class Simulation {
             });
             String[] data = new String[5];
             data[0] = "Cloutlet-ID";
-            data[1] = "Algo Response Time";
-            data[2] = "Round-Robin Response Time";
-            data[3] = "Algo Waiting Time";
-            data[4] = "Round-Robin Waiting Time";
-            String csv = "Statistics.csv";
+            data[1] = "Algo Wait Time";
+            data[2] = "Round-Robin Wait Time";
+            data[3] = "Algo Execution Time";
+            data[4] = "Round-Robin Execution Time";
+            String csv = "Outputs/Statistics.csv";
             CSVWriter writer = new CSVWriter(new FileWriter(csv, false));
             writer.writeNext(data);
             DecimalFormat dft = new DecimalFormat("###.##");
@@ -218,7 +223,7 @@ public class Simulation {
             data[(i*3)+6] = "";
         }
         try {
-            String csv = "Algo.csv";
+            String csv = "Outputs/SchedulingData.csv";
             CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
             writer.writeNext(data);
             writer.close();
@@ -317,7 +322,7 @@ public class Simulation {
                 data[i*3+5] = "Load";
                 data[i*3+6] = "";
             }
-            String csv = "Algo.csv";
+            String csv = "Outputs/SchedulingData.csv";
             CSVWriter writer = new CSVWriter(new FileWriter(csv,false));
             //CSVWriter writer = new CSVWriter(new FileWriter(csv, true));
             writer.writeNext(data);
@@ -525,30 +530,59 @@ public class Simulation {
      * @param list  list of Cloudlets
      */
     @SuppressWarnings("deprecation")
-    private static void printCloudletList(List<Cloudlet> list) {
+    private static void printCloudletList(List<Cloudlet> list,String algorithm) {
         int size = list.size();
         Cloudlet cloudlet;
-
-        String indent = "    ";
-        Log.printLine();
-        Log.printLine("========== OUTPUT ==========");
-        Log.printLine("Cloudlet ID" + indent + "STATUS" + indent +
-                "Data center ID" + indent + "VM ID" + indent + indent + "Time" + indent + "Start Time" + indent + "Finish Time" +indent+"user id"+indent);
-
-        DecimalFormat dft = new DecimalFormat("###.##");
-        for (int i = 0; i < size; i++) {
-            cloudlet = list.get(i);
-            Log.print(indent + cloudlet.getCloudletId() + indent + indent);
-
-            if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS){
-                Log.print("SUCCESS");
-
-                Log.printLine( indent + indent + cloudlet.getResourceId() + indent + indent + indent + cloudlet.getVmId() +
-                        indent + indent + indent + dft.format(cloudlet.getActualCPUTime()) +
-                        indent + indent + dft.format(cloudlet.getExecStartTime())+ indent + indent + indent + dft.format(cloudlet.getFinishTime())+indent +cloudlet.getUserId());
+        try {
+            String indent = "    ";
+            Log.printLine();
+            Log.printLine("============================== " + algorithm + " ==============================");
+            Log.printLine("Cloudlet ID" + indent + "STATUS" + indent +
+                    "Data center ID" + indent + "VM ID" + indent + indent + "Time" + indent + "Start Time" + indent + "Finish Time" + indent + "user id" + indent);
 
 
+            String data[] = new String[8];
+            data[0] = "Cloudlet ID";
+            data[1] = "STATUS";
+            data[2] = "Data center ID";
+            data[3] = "VM ID";
+            data[4] = "Time";
+            data[5] = "Start Time";
+            data[6] = "Finish Time";
+            data[7] = "user id";
+            String csv = "Outputs/" + algorithm + " Execution Details.csv";
+            CSVWriter writer = new CSVWriter(new FileWriter(csv, false));
+            writer.writeNext(data);
+
+
+            DecimalFormat dft = new DecimalFormat("###.##");
+            for (int i = 0; i < size; i++) {
+                cloudlet = list.get(i);
+                Log.print(indent + cloudlet.getCloudletId() + indent + indent);
+
+                if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS) {
+                    Log.print("SUCCESS");
+
+                    Log.printLine(indent + indent + cloudlet.getResourceId() + indent + indent + indent + cloudlet.getVmId() +
+                            indent + indent + indent + dft.format(cloudlet.getActualCPUTime()) +
+                            indent + indent + dft.format(cloudlet.getExecStartTime()) + indent + indent + indent + dft.format(cloudlet.getFinishTime()) + indent + cloudlet.getUserId());
+
+                    data[0] = ""+cloudlet.getCloudletId();
+                    data[1] = "SUCCESS";
+                    data[2] = ""+cloudlet.getResourceId();
+                    data[3] = ""+cloudlet.getVmId();
+                    data[4] = ""+dft.format(cloudlet.getActualCPUTime());
+                    data[5] = ""+dft.format(cloudlet.getExecStartTime());
+                    data[6] = ""+dft.format(cloudlet.getFinishTime());
+                    data[7] = ""+cloudlet.getUserId();
+                    writer.writeNext(data);
+                }
             }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            Log.printLine("Error Occoured"+e.toString());
         }
 
     }
